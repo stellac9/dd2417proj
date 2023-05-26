@@ -7,7 +7,7 @@ class Reader():
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer 
         self.summaryIndex = 0
-        self.textIndex = 3
+        self.textIndex = 2
         self.summaries = []
         self.texts = []
     
@@ -22,10 +22,12 @@ class Reader():
             for row in tqdm(csv_reader):
                 for i, value in enumerate(row):
                     if i == self.summaryIndex:
-                        preparedValue, _ = self.tokenizer.prepare_for_tokenization(value)
+                        valueWithoutDoubleSpaces = " ".join(value.split())
+                        preparedValue, _ = self.tokenizer.prepare_for_tokenization(valueWithoutDoubleSpaces)
                         self.summaries.append(self.tokenizer(preparedValue)["input_ids"])
                     elif i ==  self.textIndex:
-                        preparedValue, _ = self.tokenizer.prepare_for_tokenization(value)
+                        valueWithoutDoubleSpaces = " ".join(value.split())
+                        preparedValue, _ = self.tokenizer.prepare_for_tokenization(valueWithoutDoubleSpaces)
                         self.texts.append(self.tokenizer(preparedValue)["input_ids"])
 
 
@@ -37,7 +39,7 @@ def main():
     r.read_csv_file('wikiSample.csv')
 
     #print first summary token by token with encoding
-    for token_encoding in r.summaries[0]:
+    for token_encoding in r.texts[0]:
         print(token_encoding,t.decode(token_encoding))
 
 if __name__ == '__main__':
