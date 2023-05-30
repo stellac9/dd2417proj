@@ -1,7 +1,8 @@
 import csv
+import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 from tqdm import tqdm
 
 class Reader():
@@ -19,13 +20,16 @@ class Reader():
         with open(file_path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
             next(csv_reader)  # Skip the first row
+            #csv_reader.dropna()
 
             for row in tqdm(csv_reader):
-                summary = " ".join(row[self.summaryIndex].split())
-                text = " ".join(row[self.textIndex].split())
-
-                summaries.append(summary)
-                texts.append(text)
+                
+                if all(row):
+                    summary = " ".join(row[self.summaryIndex].split())
+                    text = " ".join(row[self.textIndex].split())
+                    #print(summary, text)
+                    summaries.append(summary)
+                    texts.append(text)
 
         self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
@@ -42,11 +46,15 @@ class CustomDataset(Dataset):
         return len(self.texts)
 
     def __getitem__(self, idx):
+        #print("index", idx)
+        #print("length of texts", len(self.texts))
+        #print("length of summaries", len(self.summaries))
+       # print("text[idx], summary[idx]", self.texts[idx], self.summaries[idx])
         return self.texts[idx], self.summaries[idx]
 
 
 def main():
-    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+    tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
     reader = Reader(tokenizer)
     reader.read_csv_file('wikihowSep.csv')
 
@@ -55,11 +63,13 @@ def main():
 
     # Create CustomDataset and DataLoader
     dataset = CustomDataset(reader.texts, reader.summaries)
-    dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=4)
+    #print("length of dataloader", len(dataloader))
 
     # Training loop
     device = torch.device("cpu")
     model.to(device)
+    # 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
     num_epochs = 5
 
@@ -70,9 +80,11 @@ def main():
             inputs = [input_seq.to(device) for input_seq in inputs]
             labels = [label_seq.to(device) for label_seq in labels]
 
+            # sets gradients of optimised tensors to zero.
             optimizer.zero_grad()
-
+            
             outputs = model(inputs[0], labels=labels[0])
+            #print(outputs)
             loss = outputs.loss
 
             loss.backward()
@@ -84,3 +96,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# data.dropna() -- removes any rows with NaN values
