@@ -31,7 +31,7 @@ class Reader():
                     summaries.append(summary)
                     texts.append(text)
 
-        self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        
 
         self.summaries = self.tokenizer(summaries, truncation=True, padding=True)["input_ids"]
         self.texts = self.tokenizer(texts, truncation=True, padding=True)["input_ids"]
@@ -55,15 +55,16 @@ class CustomDataset(Dataset):
 
 def main():
     tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
     reader = Reader(tokenizer)
-    reader.read_csv_file('wikihowSep.csv')
+    reader.read_csv_file('wikiHalf.csv')
 
     # Create GPT-2 model
     model = GPT2LMHeadModel.from_pretrained("gpt2")
 
     # Create CustomDataset and DataLoader
     dataset = CustomDataset(reader.texts, reader.summaries)
-    dataloader = DataLoader(dataset, batch_size=4)
+    dataloader = DataLoader(dataset, batch_size=100)
     #print("length of dataloader", len(dataloader))
 
     # Training loop
@@ -99,3 +100,4 @@ if __name__ == '__main__':
 
 
 # data.dropna() -- removes any rows with NaN values
+# head -1000000 fileFrom.csv > fileTo.csv
