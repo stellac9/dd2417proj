@@ -9,7 +9,7 @@ class Reader():
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer 
         self.summaryIndex = 0
-        self.textIndex = 2
+        self.textIndex = 1
         self.summaries = []
         self.texts = []
 
@@ -56,8 +56,10 @@ class CustomDataset(Dataset):
 def main():
     tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    #tokenizer.pad_token = tokenizer.eos_token
+    #tokenizer.padding_side = 'left'
     reader = Reader(tokenizer)
-    reader.read_csv_file('wikiHalf.csv')
+    reader.read_csv_file('wikiClean.csv')
 
     # Create GPT-2 model
     model = GPT2LMHeadModel.from_pretrained("gpt2")
@@ -72,8 +74,7 @@ def main():
     model.to(device)
     # 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
-    num_epochs = 5
-
+    num_epochs = 3
     model.train()
     for epoch in range(num_epochs):
         for batch in tqdm(dataloader, desc=f"Epoch {epoch+1}"):
@@ -83,8 +84,10 @@ def main():
 
             # sets gradients of optimised tensors to zero.
             optimizer.zero_grad()
-            
-            outputs = model(inputs[0], labels=labels[0])
+            try:
+                outputs = model(inputs[0], labels=labels[0])
+            except Exception as e:
+                continue
             #print(outputs)
             loss = outputs.loss
 
