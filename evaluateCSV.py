@@ -12,9 +12,12 @@ def generate_summaries(input_text, model, tokenizer, max_length=300, num_return_
     for output in outputs:
         summary = tokenizer.decode(output, skip_special_tokens=True)
         summary = summary[len(input_text):]
-        summary = summary.split('. ')[0] + '.'
+        stop_indices = [summary.find('.'), summary.find('!')]
+        valid_stops = [i for i in stop_indices if i != -1]
+        if valid_stops:
+            summary = summary[:min(valid_stops) + 1]
         generated_summaries.append(summary)
-    
+
     return generated_summaries
 
 def evaluate_summaries(references, summaries):
@@ -34,7 +37,7 @@ def evaluate_summaries(references, summaries):
 
 def main():
     # Load the fine-tuned model -- change model name if needed
-    model = GPT2LMHeadModel.from_pretrained("fine-tuned-model-amaz200k")
+    model = GPT2LMHeadModel.from_pretrained("fine-tuned-model-amaz50kJust-batch64")
     model.eval()
     
     # Set up the tokenizer
@@ -48,22 +51,25 @@ def main():
         reader = csv.reader(csvfile)
         for row in reader:
             # change indices here to the correct columns for the CSV being used
-            input_texts.append(row[9])
-            references.append(row[8])
+            input_texts.append(row[1])
+            references.append(row[0])
     
     # Generate and evaluate summaries for each input text
     for input_text, reference in zip(input_texts, references):
         summaries = generate_summaries(input_text, model, tokenizer)
-        print("Input Text:", input_text)
-        print("Generated Summary:", summaries[0])
-        print("Reference:", reference)
-        
-        # Evaluate the generated summary
-        scores = evaluate_summaries([reference], summaries)
-        print("ROUGE scores:")
-        for metric, score in scores.items():
-            print(f"{metric}: {score}")
-        print()
+        if summaries:  # Check if the list is not empty
+            print("Input Text:", input_text)
+            print("Generated Summary:", summaries[0])
+            print("Reference:", reference)
+
+            # Evaluate the generated summary
+            scores = evaluate_summaries([reference], summaries)
+            print("ROUGE scores:")
+            for metric, score in scores.items():
+                print(f"{metric}: {score}")
+            print()
+        else:
+            print("No suitable summary generated.")
         
 
 if __name__ == '__main__':
